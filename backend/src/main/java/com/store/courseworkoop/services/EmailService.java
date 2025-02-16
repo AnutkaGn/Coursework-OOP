@@ -15,7 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class EmailService {
-    private final UserService userService;  // Використовуємо тільки UserService
+    private final UserService userService;
     private final JavaMailSender javaMailSender;
     private final UserRepository userRepository;
 
@@ -53,7 +53,7 @@ public class EmailService {
     }
 
     public ResponseDto<Void> verifyCode(VerifyEmailDto dto) {
-        User user = userService.findByEmail(dto.getEmail());  // Використовуємо UserService для пошуку користувача
+        User user = userService.findByEmail(dto.getEmail());
 
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.USER_NOT_FOUND);

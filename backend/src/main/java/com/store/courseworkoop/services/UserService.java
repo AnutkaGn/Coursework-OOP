@@ -28,7 +28,6 @@ public class UserService implements UserDetailsService {
         if (userRepository.existsByPhoneNumber(dto.getPhoneNumber())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, Messages.PHONE_NUMBER_ALREADY_EXISTS);
         }
-        System.out.println("user created");
 
         User user = new User();
         user.setEmail(dto.getEmail());
@@ -44,23 +43,22 @@ public class UserService implements UserDetailsService {
 
     // Find user by email
     public User findByEmail(String email) {
-        return userRepository.findByEmail(email).orElse(null);  // Повертаємо null, якщо користувача не знайдено
+        return userRepository.findByEmail(email).orElse(null);
     }
 
     // Find user by ID
     public ResponseDto<User> findMe(String email) {
-        System.out.println(email);
-        User user = userRepository.findByEmail(email).orElse(null);  // Пошук користувача за імейлом
+        User user = userRepository.findByEmail(email).orElse(null);
         if (user == null) {
-            return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), Messages.USER_NOT_FOUND, null);  // Повертаємо повідомлення про помилку
+            return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), Messages.USER_NOT_FOUND, null);
         }
-        return new ResponseDto<>(HttpStatus.OK.value(), Messages.USER_GET_SUCCESSFULLY, user);  // Повертаємо знайденого користувача
+        return new ResponseDto<>(HttpStatus.OK.value(), Messages.USER_GET_SUCCESSFULLY, user);
     }
 
 
     // Find user by phone number
     public User findByPhoneNumber(String phoneNumber) {
-        return userRepository.findByPhoneNumber(phoneNumber).orElse(null);  // Повертаємо null, якщо користувача не знайдено
+        return userRepository.findByPhoneNumber(phoneNumber).orElse(null);
     }
 
     // Update user's verification code
@@ -79,8 +77,6 @@ public class UserService implements UserDetailsService {
 
     // Update profile
     public ResponseDto<User> updateProfile(String email, UpdateUserDto dto) {
-        System.out.println(email);
-        System.out.println(dto);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.USER_NOT_FOUND));
 
@@ -122,6 +118,10 @@ public class UserService implements UserDetailsService {
         return new ResponseDto<>( HttpStatus.OK.value(), Messages.USER_DELETED, null);
     }
 
+    /**
+     * Loads user details for authentication by email.
+     * Throws an exception if the user is not found.
+    */
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
@@ -129,8 +129,8 @@ public class UserService implements UserDetailsService {
 
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
-                .password(user.getPassword()) // Пароль має бути закодований!
-                .roles(user.getRole().name()) // Переконайтеся, що у User є поле `role`
+                .password(user.getPassword())
+                .roles(user.getRole().name())
                 .build();
     }
 }

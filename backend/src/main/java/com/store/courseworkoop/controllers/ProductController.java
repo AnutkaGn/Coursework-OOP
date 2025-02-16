@@ -39,7 +39,6 @@ public class ProductController {
         return productService.findAll(query);
     }
 
-
     // Get Product by ID
     @GetMapping("/{id}")
     public ResponseDto<Product> findOne(@PathVariable String id) {

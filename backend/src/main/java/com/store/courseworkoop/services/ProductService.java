@@ -32,7 +32,6 @@ public class ProductService {
     }
 
     public ResponseDto<Product> create(CreateProductDto createProductDto) {
-        System.out.println("Creating product " + createProductDto.getName());
         Product product = new Product();
         product.setName(createProductDto.getName());
         product.setDescription(createProductDto.getDescription());
@@ -45,17 +44,18 @@ public class ProductService {
         return new ResponseDto<>(HttpStatus.CREATED.value(), Messages.PRODUCT_CREATED, savedProduct);
     }
 
+    // Retrieves all products with optional filtering by name and sorting by price.
     public ResponseDto<PaginatedResponseDto<GetAllProduct>> findAll(GetProductsQueryDto query) {
-        // Встановлення значень за замовчуванням для page та limit
+        // Set default values for page and limit
         int page = query.getPage() != null ? query.getPage() : 1;
         int limit = query.getLimit() != null ? query.getLimit() : 10;
         String name = query.getName();
         SortOrder sortOrder = query.getSortByPrice();
 
-        // Створення PageRequest для пагінації
+        // Create PageRequest for pagination
         PageRequest pageRequest;
 
-        // Логіка для сортування за ціною
+        // Logic for sorting by price
         if (sortOrder != null && sortOrder == SortOrder.ASC) {
             pageRequest = PageRequest.of(page - 1, limit, Sort.by(Sort.Order.asc("price")));
         } else if (sortOrder != null && sortOrder == SortOrder.DESC) {
@@ -64,22 +64,22 @@ public class ProductService {
             pageRequest = PageRequest.of(page - 1, limit);
         }
 
-        // Пошук продуктів з фільтром по ім'ю та пагінацією
+        // Search for products with filter by name and pagination
         Page<Product> productPage;
         if (name != null && !name.isEmpty()) {
             productPage = productRepository.findByNameContainingIgnoreCase(name, pageRequest);
         } else {
-            productPage = productRepository.findAll(pageRequest); // якщо ім'я не задано, повертаємо всі продукти
+            productPage = productRepository.findAll(pageRequest); // if name is not specified, return all products
         }
 
         long total = productPage.getTotalElements();
 
-        // Якщо продукти не знайдені
+        // If no products are found
         if (productPage.getContent().isEmpty()) {
             return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), Messages.NO_PRODUCTS_FOUND, null);
         }
 
-        // Перетворення продуктів в DTO
+        // Convert products to DTO
         List<GetAllProduct> getAllProducts = productPage.getContent().stream()
                 .map(product -> {
                     GetAllProduct getAllProduct = new GetAllProduct();
@@ -90,15 +90,13 @@ public class ProductService {
                     return getAllProduct;
                 }).collect(Collectors.toList());
 
-        // Формуємо відповідь з пагінацією
+        // Form the response with pagination
         PaginatedResponseDto<GetAllProduct> response = new PaginatedResponseDto<>(getAllProducts, total);
 
-        // Повертаємо успішний результат
         return new ResponseDto<>(HttpStatus.OK.value(), Messages.PRODUCTS_RETRIEVED, response);
     }
 
-
-
+    // Finds a single product by ID.
     public ResponseDto<Product> findOne(String id) {
         Product product = productRepository.findById(id).orElse(null);
 
@@ -109,6 +107,7 @@ public class ProductService {
         return new ResponseDto<>(HttpStatus.OK.value(), Messages.PRODUCTS_RETRIEVED, product);
     }
 
+    // Updates an existing product.
     public ResponseDto<Product> update(String id, UpdateProductDto updateProductDto) {
         Product existingProduct = productRepository.findById(id).orElse(null);
 
@@ -127,6 +126,7 @@ public class ProductService {
         return new ResponseDto<>(HttpStatus.OK.value(), Messages.PRODUCT_UPDATED, updatedProduct);
     }
 
+    //  Removes a product by ID.
     public ResponseDto<Void> remove(String id) {
         Product existingProduct = productRepository.findById(id).orElse(null);
 
@@ -139,16 +139,16 @@ public class ProductService {
         return new ResponseDto<>(HttpStatus.OK.value(), Messages.PRODUCT_DELETED, null);
     }
 
+    // Updates the stock quantity of a product.
     public ResponseDto<Product> updateStock(String productId, int quantity) {
         Optional<Product> productOptional = productRepository.findById(productId);
         if (productOptional.isPresent()) {
             Product product = productOptional.get();
-            System.out.println(product);
             product.setStock(product.getStock() + quantity);
             productRepository.save(product);
-            return new ResponseDto<>(HttpStatus.OK.value(), "Product updated", product);
+            return new ResponseDto<>(HttpStatus.OK.value(), Messages.PRODUCT_UPDATED, product);
         } else {
-            return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), "Product not found", null);
+            return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), Messages.PRODUCT_NOT_FOUND, null);
         }
     }
 }

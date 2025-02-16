@@ -41,63 +41,54 @@ public class OrderService {
 
     @Autowired
     private UserRepository userRepository;
-    @Autowired
-    private ProductRepository productRepository;
+
+    //Retrieves all orders with optional filtering, sorting, and pagination.
     public ResponseDto<PaginatedResponseDto<Order>> getAll(PaymentStatus paymentStatus, DeliveryStatus deliveryStatus, String sortDirection, Integer page, Integer limit, String userId) {
-        // Встановлення значень за замовчуванням для page та limit
         page = (page != null) ? page : 1;
         limit = (limit != null) ? limit : 10;
 
-        // Логіка для сортування
+        // Sorting logic
         Sort.Direction direction = (sortDirection != null && sortDirection.equalsIgnoreCase("desc")) ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page - 1, limit, direction, "createdAt");
 
-        // Виклик репозиторію з фільтрами і пагінацією
+        // Calling a repository with filters and pagination
         Page<Order> ordersPage = orderRepository.findByFilters(paymentStatus, deliveryStatus, userId, pageable);
 
-        // Якщо ордери не знайдені
         if (ordersPage.isEmpty()) {
-            return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), "Orders not found", null);
+            return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), Messages.ORDER_NOT_FOUND, null);
         }
 
-        // Пакування в PaginatedResponseDto
+        // Packaging in PaginatedResponseDto
         PaginatedResponseDto<Order> paginatedResponse = new PaginatedResponseDto<>(ordersPage.getContent(), ordersPage.getTotalElements());
 
-        // Повернення успішної відповіді
-        return new ResponseDto<>(HttpStatus.OK.value(), "Orders retrieved", paginatedResponse);
+        return new ResponseDto<>(HttpStatus.OK.value(), Messages.ORDER_RETRIEVED, paginatedResponse);
     }
 
-
+    // Retrieves an order by its ID.
     public ResponseDto<Order> getById(String id) {
         Optional<Order> order = orderRepository.findByIdWithDetails(id);
         if (order.isPresent()) {
-            return new ResponseDto<>(HttpStatus.OK.value(), "Order retrieved", order.get());
+            return new ResponseDto<>(HttpStatus.OK.value(), Messages.ORDER_RETRIEVED, order.get());
         } else {
-            return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), "Order not found", null);
+            return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), Messages.ORDER_NOT_FOUND, null);
         }
     }
 
+    // Creates a new order and its order details.
     public ResponseDto<Order> create(CreateOrderDto createOrderDto) {
-        // Знаходимо користувача за ID
+        // Find a user by ID
         User user = userRepository.findByEmail(createOrderDto.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException(Messages.ORDER_NOT_FOUND));
 
-        // Створюємо нове замовлення
+        // Creating a new order
         Order order = new Order();
         order.setUser(user);
         order.setTotalAmount(createOrderDto.getTotalAmount());
 
-        // Зберігаємо замовлення
         orderRepository.save(order);
 
-        // Обробляємо деталі замовлення
-        System.out.println(createOrderDto.getOrderDetails());
+        // Processing order details
         createOrderDto.getOrderDetails().forEach(detail -> {
-            System.out.println(detail.getProductId());
-            if (detail.getProductId() == null) {
-                throw new RuntimeException("Product is null in OrderDetail");
-            }
-
             CreateOrderDetailsDto orderDetailDto = new CreateOrderDetailsDto(
                     order.getId(),
                     detail.getProductId(),
@@ -105,7 +96,7 @@ public class OrderService {
                     detail.getPriceAtPurchase()
             );
 
-            orderDetailService.create(orderDetailDto); // Використовуй DTO для створення
+            orderDetailService.create(orderDetailDto);
             productService.updateStock(detail.getProductId(), -detail.getQuantity());
         });
 
@@ -113,84 +104,85 @@ public class OrderService {
         return new ResponseDto<>(HttpStatus.CREATED.value(), Messages.ORDER_CREATED, order);
     }
 
-
+    // Updates the quantity of an order detail and recalculates the total order amount.
     public ResponseDto<Order> updateOrderDetailQuantity(String id, UpdateOrderDetailsPayload payload) {
         ResponseDto<OrderDetail> orderDetails = orderDetailService.getById(payload.getOrderDetailId());
         int quantityChange = payload.getQuantity() - orderDetails.getData().getQuantity();
         productService.updateStock(orderDetails.getData().getProduct().getId(), -quantityChange);
 
-        // Створюємо об'єкт UpdateOrderDetailsDto
         UpdateOrderDetailsDto updateOrderDetailsDto = new UpdateOrderDetailsDto(payload.getOrderDetailId(), payload.getQuantity());
 
-        // Викликаємо метод для оновлення кількості
+        // Call the method to update the quantity
         ResponseDto<OrderDetail> response = orderDetailService.updateQuantity(updateOrderDetailsDto);
-        OrderDetail orderDetail = response.getData();  // Отримуємо сам OrderDetail
 
         Order order = orderRepository.findById(id).orElseThrow();
         double totalAmount = recalculateTotalAmount(id);
         order.setTotalAmount(totalAmount);
         orderRepository.save(order);
 
-        return new ResponseDto<>(HttpStatus.OK.value(), "Order updated", order);
+        return new ResponseDto<>(HttpStatus.OK.value(), Messages.ORDER_UPDATED, order);
     }
 
-
+    //  Updates the delivery status of an order.
     public ResponseDto<Order> updateDeliveryStatus(String id, String deliveryStatus) {
         Order order = orderRepository.findById(id).orElseThrow();
         order.setDeliveryStatus(DeliveryStatus.valueOf(deliveryStatus));
         orderRepository.save(order);
-        return new ResponseDto<>(HttpStatus.OK.value(), "Order updated", order);
+        return new ResponseDto<>(HttpStatus.OK.value(), Messages.ORDER_UPDATED, order);
     }
 
+    // Updates the payment status of an order.
     public ResponseDto<Order> updatePaymentStatus(String id, String paymentStatus) {
-        System.out.println(paymentStatus);
         Order order = orderRepository.findById(id).orElseThrow();
         order.setPaymentStatus(PaymentStatus.valueOf(paymentStatus));
         orderRepository.save(order);
-        return new ResponseDto<>(HttpStatus.OK.value(), "Order updated", order);
+        return new ResponseDto<>(HttpStatus.OK.value(), Messages.ORDER_UPDATED, order);
     }
 
+    // Deletes an order and restores product stock.
     public ResponseDto<Order> delete(String id) {
         ResponseDto<List<OrderDetailInfo>> orderDetails = orderDetailService.getByOrderId(id);
         orderDetails.getData().forEach(detail -> productService.updateStock(detail.getProductId(), detail.getQuantity()));
         orderRepository.deleteById(id);
-        return new ResponseDto<>(HttpStatus.OK.value(), "Order deleted", null);
+        return new ResponseDto<>(HttpStatus.OK.value(), Messages.ORDER_UPDATED, null);
     }
 
+    // Deletes an order detail, updates product stock, and recalculates order amount.
     public ResponseDto<Order> deleteOrderDetail(String orderDetailId) {
-        // 1. Видалити деталі замовлення
+        // Delete order details
         ResponseDto<OrderDetail> orderDetailResponse = orderDetailService.delete(orderDetailId);
         OrderDetail orderDetail = orderDetailResponse.getData();
 
         if (orderDetail == null) {
-            return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), "Order detail not found", null);
+            return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), Messages.ORDER_NOT_FOUND, null);
         }
 
         String orderId = orderDetail.getOrder().getId();
 
-        // 2. Перерахувати загальну суму замовлення після видалення деталей
+        // Recalculate the total order amount after removing details
         double totalAmount = recalculateTotalAmount(orderId);
 
-        // 3. Оновити запаси продукту після видалення
+        // Update product inventory after deletion
         productService.updateStock(orderDetail.getProduct().getId(), orderDetail.getQuantity());
 
-        // 4. Якщо сума = 0, видалити замовлення
+        // If amount = 0, delete the order
         if (totalAmount == 0) {
             this.delete(orderId);
-            return new ResponseDto<>(HttpStatus.OK.value(), "Order deleted", null);
+            return new ResponseDto<>(HttpStatus.OK.value(), Messages.ORDER_DELETED, null);
         } else {
-            // 5. Якщо сума > 0, оновити замовлення
+            // If sum > 0, update order
             Order updatedOrder = orderRepository.findById(orderId)
                     .map(order -> {
                         order.setTotalAmount(totalAmount);
                         return orderRepository.save(order);
                     })
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.ORDER_NOT_FOUND));
 
-            return new ResponseDto<>(HttpStatus.OK.value(), "Order updated", updatedOrder);
+            return new ResponseDto<>(HttpStatus.OK.value(), Messages.ORDER_UPDATED, updatedOrder);
         }
     }
 
+    // Recalculates the total amount of an order.
     private double recalculateTotalAmount(String orderId) {
         List<OrderDetailInfo> orderDetails = orderDetailService.getByOrderId(orderId).getData();
 
@@ -198,8 +190,7 @@ public class OrderService {
             double totalAmount = orderDetails.stream()
                     .mapToDouble(detail -> detail.getQuantity() * detail.getPriceAtPurchase())
                     .sum();
-            System.out.println(totalAmount);
-            return Math.round(totalAmount * 100.0) / 100.0;  // Округлення до двох знаків після коми
+            return Math.round(totalAmount * 100.0) / 100.0;  // Round to two decimal places
         } else {
             return 0;
         }

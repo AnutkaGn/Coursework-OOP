@@ -24,7 +24,6 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseDto<String> login(@RequestBody @Valid LoginDto dto) {
-        System.out.println("Login request received for email: " + dto.getEmail());
         return authService.login(dto);
     }
 

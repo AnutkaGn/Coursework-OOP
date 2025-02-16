@@ -22,11 +22,9 @@ public class AuthService {
     }
 
     public ResponseDto<Void> register(RegisterDto dto) {
-        System.out.println(userService.findByEmail(dto.getEmail()));
         if (userService.findByEmail(dto.getEmail()) != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, Messages.USER_ALREADY_EXISTS);
         }
-        System.out.println(userService.findByPhoneNumber(dto.getPhoneNumber()));
         if (userService.findByPhoneNumber(dto.getPhoneNumber()) != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, Messages.PHONE_NUMBER_ALREADY_EXISTS);
         }
@@ -47,7 +45,6 @@ public class AuthService {
 
     public ResponseDto<String> login(LoginDto dto) {
         User user = userService.findByEmail(dto.getEmail());
-        System.out.println(user);
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.USER_NOT_FOUND);
         }

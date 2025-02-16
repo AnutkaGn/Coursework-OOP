@@ -15,13 +15,13 @@ public class JwtUtil {
     private String secretKey;
 
     @Value("${jwt.expiration}")
-    private long jwtExpiration; // Час життя токена (в мілісекундах)
+    private long jwtExpiration; // Token lifetime (in milliseconds)
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    // Генерація JWT токена
+    // JWT token generation
     public String generateToken(String userId, String email, UserRole role) {
         return Jwts.builder()
                 .setSubject(userId)
@@ -33,7 +33,7 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Отримання userId з токена
+    // Get user email from token
     public String extractEmail(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
@@ -43,17 +43,7 @@ public class JwtUtil {
                 .get("email", String.class); // Отримуємо email з claims
     }
 
-    public String extractId(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .get("id", String.class); // Отримуємо email з claims
-    }
-
-
-    // Перевірка валідності токена
+    // Token validation check
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()

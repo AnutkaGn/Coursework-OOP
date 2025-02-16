@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.access.AccessDeniedException;
 
-@RestControllerAdvice
+@RestControllerAdvice  // Marks this class as a global exception handler for all controllers
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResponseStatusException.class)
@@ -17,11 +17,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleGenericException(Exception ex) {
-        System.out.println(ex.getMessage());
         if (ex instanceof AccessDeniedException) {
-            throw (AccessDeniedException) ex;
+            throw (AccessDeniedException) ex; // Let Spring Security handle AccessDeniedException
         }
-        ex.printStackTrace();
+        ex.printStackTrace(); // Logs the exception stack trace in the console
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error occurred");
     }
 }

@@ -3,8 +3,6 @@ package com.store.courseworkoop.controllers;
 import com.store.courseworkoop.dto.*;
 import com.store.courseworkoop.dto.CreateOrderDto;
 import com.store.courseworkoop.dto.ResponseDto;
-import com.store.courseworkoop.dto.CreateOrderDto;
-import com.store.courseworkoop.dto.ResponseDto;
 import com.store.courseworkoop.enums.DeliveryStatus;
 import com.store.courseworkoop.enums.PaymentStatus;
 import com.store.courseworkoop.models.Order;
@@ -15,8 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/order")
@@ -42,9 +38,9 @@ public class OrderController {
     }
 
     @PostMapping
-    public ResponseEntity<ResponseDto<Order>> create(@RequestBody CreateOrderDto createOrderDto,
-                                                     @AuthenticationPrincipal String userId) {
-        System.out.println(userId);
+    public ResponseEntity<ResponseDto<Order>> create(
+            @RequestBody CreateOrderDto createOrderDto,
+            @AuthenticationPrincipal String userId) {
         createOrderDto.setUserId(userId);
         return new ResponseEntity<>(orderService.create(createOrderDto), HttpStatus.CREATED);
     }

@@ -7,14 +7,15 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+// Handle cases where a user tries to access a protected resource without the required permissions.
 @Component
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException {
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-        response.setContentType("application/json");
-        response.getWriter().write("{\"message\": \"access denied, no permissions required\"}");
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN); // Sets HTTP status to 403 Forbidden
+        response.setContentType("application/json"); // Ensures response is in JSON format
+        response.getWriter().write("{\"message\": \"access denied, no permissions required\"}"); // Custom error message
     }
 }
 

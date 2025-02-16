@@ -27,8 +27,6 @@ public class UserController {
     public ResponseDto<User> updateUserProfile(
             @AuthenticationPrincipal String email,
             @RequestBody UpdateUserDto updateUserProfileDto) {
-        System.out.println(updateUserProfileDto);
-        System.out.println(email);
         return userService.updateProfile(email, updateUserProfileDto);
     }
 

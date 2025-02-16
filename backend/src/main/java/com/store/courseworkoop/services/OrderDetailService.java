@@ -22,18 +22,21 @@ public class OrderDetailService {
 
     @Autowired
     private OrderDetailRepository orderDetailRepository;
-
     @Autowired
     private ProductRepository productRepository;
     @Autowired
     private OrderRepository orderRepository;
 
+    // Creates a new OrderDetail entry.
     public ResponseDto<Void> create(CreateOrderDetailsDto data) {
         try {
-            Order order = orderRepository.findById(data.getOrderId()).orElseThrow(() ->  new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.ORDER_NOT_FOUND));
-            System.out.println(order);
-            Product product = productRepository.findById(data.getProductId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.PRODUCT_NOT_FOUND));
-            System.out.println(product);
+            // Find the order by ID
+            Order order = orderRepository.findById(data.getOrderId())
+                .orElseThrow(() ->  new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.ORDER_NOT_FOUND));
+            // Find the product by ID
+            Product product = productRepository.findById(data.getProductId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.PRODUCT_NOT_FOUND));
+            // Create new OrderDetail and save it
             OrderDetail orderDetail = new OrderDetail(order, product, data.getQuantity(), data.getPriceAtPurchase());
             orderDetailRepository.save(orderDetail);
 
@@ -43,22 +46,27 @@ public class OrderDetailService {
         }
     }
 
+    // Retrieves an OrderDetail by its ID.
     public ResponseDto<OrderDetail> getById(String id) {
         OrderDetail orderDetail = orderDetailRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.ORDER_DETAILS_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.ORDER_DETAILS_NOT_FOUND));
 
         return new ResponseDto<>(HttpStatus.OK.value(), Messages.ORDER_RETRIEVED, orderDetail);
     }
 
+    //  Retrieves all OrderDetails for a specific order ID.
     public ResponseDto<List<OrderDetailInfo>> getByOrderId(String orderId) {
+        // Fetch all OrderDetails associated with the given order ID
         List<OrderDetail> orderDetails = orderDetailRepository.findByOrderId(orderId);
+        // Convert OrderDetail entities to DTOs
         List<OrderDetailInfo> orderDetailInfos = orderDetails.stream().map(orderDetail -> {
+            // Retrieve product details
             Product product = productRepository.findById(orderDetail.getProduct().getId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.PRODUCT_NOT_FOUND));
-
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.PRODUCT_NOT_FOUND));
+            // Create ProductInfo DTO
             ProductInfo productInfo = new ProductInfo(product.getName(), product.getDescription(),
                     product.getPrice(), product.getStock(), product.getCategory());
-
+            // Create OrderDetailInfo DTO
             return new OrderDetailInfo(orderDetail.getId(), orderDetail.getProduct().getId(), orderDetail.getQuantity(),
                     orderDetail.getPriceAtPurchase(), productInfo);
         }).collect(Collectors.toList());
@@ -66,7 +74,9 @@ public class OrderDetailService {
         return new ResponseDto<>(HttpStatus.OK.value(), Messages.ORDER_RETRIEVED, orderDetailInfos);
     }
 
+    //  Updates the quantity of an existing OrderDetail.
     public ResponseDto<OrderDetail> updateQuantity(UpdateOrderDetailsDto data) {
+        // Find the existing OrderDetail by ID
         OrderDetail existingOrderDetail = orderDetailRepository.findById(data.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, Messages.ORDER_DETAILS_NOT_FOUND));
 
@@ -76,17 +86,18 @@ public class OrderDetailService {
         return new ResponseDto<>(HttpStatus.OK.value(), Messages.ORDER_UPDATED, existingOrderDetail);
     }
 
+    //  Deletes an OrderDetail by its ID.
     public ResponseDto<OrderDetail> delete(String id) {
-        // Знайти OrderDetail перед видаленням
+        // Find OrderDetail before deletion
         Optional<OrderDetail> optionalOrderDetail = orderDetailRepository.findById(id);
 
         if (optionalOrderDetail.isEmpty()) {
-            return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), "Order detail not found", null);
+            return new ResponseDto<>(HttpStatus.NOT_FOUND.value(), Messages.ORDER_NOT_FOUND, null);
         }
 
         OrderDetail orderDetail = optionalOrderDetail.get();
 
-        // Видалити OrderDetail з бази даних
+        // Delete the OrderDetail from the database
         orderDetailRepository.deleteById(id);
 
         // Повернути видалений об'єкт

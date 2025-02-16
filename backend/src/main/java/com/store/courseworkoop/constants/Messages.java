@@ -19,6 +19,7 @@ public class Messages {
     public static final String SEND_VERIFICATION_CODE = "Send verification code";
     public static final String VERIFICATION_CODE_REQUIRED = "Verification code required";
     public static final String INVALID_VERIFICATION_CODE = "Invalid verification code";
+    public static final String INVALID_TOKEN = "Invalid Token";
 
     // Products
     public static final String PRODUCT_CREATED = "Product created successfully!";

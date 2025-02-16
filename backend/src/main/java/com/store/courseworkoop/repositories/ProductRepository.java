@@ -9,18 +9,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, String> {
 
-    // З підтримкою пагінації для пошуку за частковим іменем
     Page<Product> findByNameContainingIgnoreCase(String name, PageRequest pageRequest);
-
-    // З підтримкою пагінації для пошуку за категорією
-    Page<Product> findByCategory(String category, PageRequest pageRequest);
-
-    // З підтримкою пагінації для сортування за ціною по зростанню
-    Page<Product> findAllByOrderByPriceAsc(PageRequest pageRequest);
-
-    // З підтримкою пагінації для сортування за ціною по спаданню
-    Page<Product> findAllByOrderByPriceDesc(PageRequest pageRequest);
-
-    // Метод для підрахунку всіх продуктів
+    // Method for counting all products
     long count();
 }
